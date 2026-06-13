@@ -6,6 +6,7 @@ members = [
     "methods",
     "idl-gen",
     "methods/guest",
+    "sdk",
     "e2e_tests",
 ]
 

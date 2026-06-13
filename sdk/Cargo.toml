@@ -1,0 +1,21 @@
+[package]
+name = "pms_sdk"
+version = "0.1.0"
+edition = "2021"
+description = "Host-side SDK for the LEZ private multisig: key management, private-execution approvals, transaction building"
+
+[dependencies]
+pms_core = { path = "../pms_core" }
+nssa.workspace = true
+nssa_core.workspace = true
+common.workspace = true
+sequencer_service_rpc.workspace = true
+key_protocol = { git = "https://github.com/logos-blockchain/logos-execution-zone.git", tag = "v0.1.2" }
+borsh.workspace = true
+rand = "0.8"
+thiserror = "1"
+log = "0.4"
+tokio = { version = "1", features = ["time"] }
+
+[dev-dependencies]
+risc0-zkvm = { version = "=3.0.5", features = ["std", "client"] }

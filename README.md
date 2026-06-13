@@ -72,15 +72,48 @@ RUST_LOG=info RISC0_DEV_MODE=1 cargo run --features standalone -p sequencer_serv
     sequencer/service/configs/debug/sequencer_config.json
 
 # In this repo:
+# Public-mode lifecycle (program logic, visible transport):
 TOKEN_PROGRAM=<lez>/artifacts/program_methods/token.bin \
 PMS_PROGRAM=$(pwd)/target/riscv32im-risc0-zkvm-elf/docker/private_multisig.bin \
 cargo test -p private-multisig-e2e --test e2e_lifecycle -- --nocapture
+
+# PRIVATE approvals via the SDK (privacy-preserving transactions):
+RISC0_DEV_MODE=1 \
+TOKEN_PROGRAM=<lez>/artifacts/program_methods/token.bin \
+PMS_PROGRAM=$(pwd)/target/riscv32im-risc0-zkvm-elf/docker/private_multisig.bin \
+cargo test -p private-multisig-e2e --test e2e_private_approve -- --nocapture
 ```
 
-The test deploys both programs, creates a token + 2-of-3 multisig, funds the
-vault, proposes a vault→recipient transfer, approves with two members,
-**verifies a double-vote is rejected**, executes permissionlessly via
-ChainedCall, and checks the resulting balances.
+`e2e_lifecycle` drives the full flow with public transactions (deploy, token,
+multisig, vault, propose, approve ×2, double-vote rejected **on-chain**,
+permissionless execute, balance checks). `e2e_private_approve` repeats the
+flow with approvals submitted as **privacy-preserving transactions** via the
+SDK and asserts the privacy properties against the actual chain bytes: zero
+signatures, no member account ID, no salt; double votes fail **locally during
+proving** with PMS_E012 before anything is submitted; `has_voted` is
+recomputed purely from chain state (resumability).
+
+## SDK
+
+`pms_sdk` is the host-side library the CLI/GUI build on:
+
+- `MemberIdentity` — shielded-account keypair (nullifier + viewing keys,
+  platform wallet derivation) + membership salt; exports the on-chain
+  commitment.
+- `MultisigClient` — reads (state/proposal/`has_voted`), public-mode ops
+  (create/propose/init_vault/execute, all unsigned), and
+  **`approve_private` / `reject_private`**: local execution + privacy-circuit
+  proof + unsigned transaction submission. Program-rule violations surface as
+  typed errors carrying the `PMS_Exxx` code before submission; inclusion
+  conflicts (another vote landed first) surface as `NotIncluded` with
+  refresh-and-re-prove guidance.
+
+## Benchmarks
+
+Real proving (`RISC0_DEV_MODE=0`) on an Apple Silicon laptop: program guest
+**296,557 cycles**; full private-approval proof (program receipt + succinct
+privacy-circuit receipt) **101 s** wall-clock; proof 227 KB; verification
+10 ms. Details in [docs/benchmarks.md](docs/benchmarks.md).
 
 ## Error codes
 
@@ -94,7 +127,10 @@ All program failures use stable, documented `PMS_Exxx` panic strings — see
 - [x] Reproducible guest build (Docker image ID)
 - [x] SPEL IDL
 - [x] E2E lifecycle vs. real sequencer (public mode)
-- [ ] SDK: private-execution transport for Approve (privacy circuit proving,
-      `RISC0_DEV_MODE=0` benchmarks)
+- [x] SDK: private-execution transport for Approve/Reject (privacy circuit
+      proving, zero-signature submission, typed error surface)
+- [x] Private-mode e2e with on-chain privacy assertions
+- [x] `RISC0_DEV_MODE=0` laptop benchmark (101 s / approval; docs/benchmarks.md)
+- [ ] Member-account update path UX (sync-private equivalent for repeat voters)
 - [ ] CLI + Basecamp GUI module
 - [ ] Testnet deployment evidence, demo.sh, write-up, video
