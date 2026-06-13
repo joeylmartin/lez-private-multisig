@@ -1,0 +1,26 @@
+[workspace]
+resolver = "2"
+members = [
+    "pms_core",
+    "multisig_program",
+    "methods",
+    "idl-gen",
+    "methods/guest",
+    "e2e_tests",
+]
+
+[workspace.dependencies]
+# Pinned to the same LEZ release SPEL targets (nssa-era naming, testnet-compatible).
+# default-features = false keeps bonsai-sdk/reqwest/ring out of the guest
+# build (matches the logos-execution-zone workspace pin). Host crates that
+# need the prover add the "client" feature themselves.
+risc0-zkvm = { version = "=3.0.5", default-features = false, features = ["std"] }
+risc0-build = "=3.0.5"
+nssa_core = { git = "https://github.com/logos-blockchain/logos-execution-zone.git", tag = "v0.1.2", features = ["host"] }
+nssa = { git = "https://github.com/logos-blockchain/logos-execution-zone.git", tag = "v0.1.2" }
+common = { git = "https://github.com/logos-blockchain/logos-execution-zone.git", tag = "v0.1.2" }
+sequencer_service_rpc = { git = "https://github.com/logos-blockchain/logos-execution-zone.git", tag = "v0.1.2", features = ["client"] }
+token_core = { git = "https://github.com/logos-blockchain/logos-execution-zone.git", tag = "v0.1.2" }
+spel-framework = { git = "https://github.com/logos-co/spel.git", rev = "73fc462eb8f0a4d00f1a846437c627ec2e523f83" }
+borsh = "1.5.7"
+serde = { version = "1.0", default-features = false, features = ["derive"] }

@@ -1,0 +1,17 @@
+[package]
+name = "private-multisig-guest"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "private_multisig"
+path = "src/bin/private_multisig.rs"
+
+[dependencies]
+pms_core = { path = "../../pms_core" }
+multisig_program = { path = "../../multisig_program" }
+nssa_core.workspace = true
+risc0-zkvm.workspace = true
+borsh.workspace = true
+spel-framework.workspace = true
+serde_json = "1"

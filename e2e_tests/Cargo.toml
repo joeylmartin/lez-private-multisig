@@ -1,0 +1,21 @@
+[package]
+name = "private-multisig-e2e"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[[test]]
+name = "e2e_lifecycle"
+path = "tests/e2e_lifecycle.rs"
+
+[dependencies]
+pms_core = { path = "../pms_core" }
+nssa.workspace = true
+nssa_core.workspace = true
+common.workspace = true
+sequencer_service_rpc.workspace = true
+token_core.workspace = true
+borsh.workspace = true
+tokio = { version = "1", features = ["full"] }

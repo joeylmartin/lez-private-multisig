@@ -1,0 +1,13 @@
+[package]
+name = "multisig_program"
+version = "0.1.0"
+edition = "2021"
+description = "LEZ private M-of-N multisig program logic (LP-0002)"
+
+[dependencies]
+pms_core = { path = "../pms_core" }
+nssa_core.workspace = true
+spel-framework.workspace = true
+serde.workspace = true
+borsh.workspace = true
+risc0-zkvm.workspace = true

@@ -1,0 +1,12 @@
+[package]
+name = "pms_core"
+version = "0.1.0"
+edition = "2021"
+description = "Shared types for the LEZ private M-of-N multisig program (LP-0002)"
+
+[dependencies]
+nssa_core.workspace = true
+risc0-zkvm.workspace = true
+borsh.workspace = true
+serde.workspace = true
+sha2 = "0.10"
