@@ -1,0 +1,116 @@
+
+═══ Preflight ═══
+RISC0_DEV_MODE=0 (0 = real proofs)
+
+═══ Starting a fresh standalone sequencer ═══
+sequencer healthy (pid 50320, home /tmp/pms-demo-seq.zQqXu4)
+
+═══ Deploying the private multisig program ═══
+program deployed (or already present)
+program id: 4034ba058ee8b799fe0f5cf449b503a7a0d2acb1554144f81bf9cd942a171c2b
+
+═══ Token setup (definition + 1,000,000 to the minter) ═══
+token created · definition 6jU1xDRoed2G9ZaSo1rsU3PtzGHkE82HmdDTXg9mwKfu · minter 6fwAScAQ1czPZ5CaxpEEbrpjTWJqUqSaP8nwRKB5FfsC (1000000 tokens)
+
+═══ Three members generate identities LOCALLY (nothing goes on-chain) ═══
+identity written to /Users/jmartin22/Desktop/lez-private-multisig/demo-run/member1.json
+shielded account id: j4Mivzig2CXcCM2W3RrmZbfPmNESwYEhb463oPHMXtF
+member commitment:   8beccfdb4a3d18670a026bd2c7ed6c02d1c98cbb30cbd24b7b8510ba866fd435
+identity written to /Users/jmartin22/Desktop/lez-private-multisig/demo-run/member2.json
+shielded account id: BqikWf2CzKyCS6FNrgDYowbg27X6c88KbQHphwAubByn
+member commitment:   a2b212a173d6922c0228910832bb11b8b9770f861427bc0ac99e2fecaa5a1166
+identity written to /Users/jmartin22/Desktop/lez-private-multisig/demo-run/member3.json
+shielded account id: GS9CgVfpkqxp6EQ23Pkqe3WF9b277t8HiS1ier42jLom
+member commitment:   4678c859ecfcb22d16603fd5b0447486bc65fe0231bd7415979ce5d468a1f8fa
+
+═══ Create the 2-of-3 multisig — the chain sees only 3 opaque commitments ═══
+multisig created (2-of-3)
+create key: a123859b0e184dcf41d516ff963122c4dbb82a1c9be163a37347a045512d5577
+state PDA:  6ux4cWcHqHyC5QLobDbgF552UP4ZzBkrqkDWyMrJa3A8
+vault PDA:  AXHCJYSYzXnuFhqdaenXKFphgCQS9upMpDosqus45kqQ
+
+═══ Initialize + fund the vault (500 tokens) ═══
+vault initialized: AXHCJYSYzXnuFhqdaenXKFphgCQS9upMpDosqus45kqQ
+transferred 500 from 6fwAScAQ1czPZ5CaxpEEbrpjTWJqUqSaP8nwRKB5FfsC to AXHCJYSYzXnuFhqdaenXKFphgCQS9upMpDosqus45kqQ
+AXHCJYSYzXnuFhqdaenXKFphgCQS9upMpDosqus45kqQ: 500 tokens
+
+═══ Create the payout recipient ═══
+key written to /Users/jmartin22/Desktop/lez-private-multisig/demo-run/recipient.json · account 8wd6qLd62MhadCK1wtRMYWKmyvaTg8bafFoUo3kHmXuc
+transferred 1 from 6fwAScAQ1czPZ5CaxpEEbrpjTWJqUqSaP8nwRKB5FfsC to 8wd6qLd62MhadCK1wtRMYWKmyvaTg8bafFoUo3kHmXuc
+
+═══ Propose: pay 100 tokens from the vault to 8wd6qLd62MhadCK1wtRMYWKmyvaTg8bafFoUo3kHmXuc (permissionless, unsigned) ═══
+proposal #1 created: transfer 100 from vault to 8wd6qLd62MhadCK1wtRMYWKmyvaTg8bafFoUo3kHmXuc
+(execute with: --target <vault> --target 8wd6qLd62MhadCK1wtRMYWKmyvaTg8bafFoUo3kHmXuc)
+multisig 2-of-3 · proposals so far: 1
+  member 1: 8beccfdb4a3d18670a026bd2c7ed6c02d1c98cbb30cbd24b7b8510ba866fd435
+  member 2: a2b212a173d6922c0228910832bb11b8b9770f861427bc0ac99e2fecaa5a1166
+  member 3: 4678c859ecfcb22d16603fd5b0447486bc65fe0231bd7415979ce5d468a1f8fa
+proposal #1: Active · approvals: 0 · rejections: 0
+
+═══ Member 1 approves ANONYMOUSLY (real proof — this is the ~2 minute step) ═══
+approving proposal #1 privately as an anonymous member...
+(proving locally — takes ~2 minutes with RISC0_DEV_MODE=0)
+[2026-06-13T01:51:00Z INFO  pms_sdk] proving private vote (this can take minutes with RISC0_DEV_MODE=0)...
+[2026-06-13T01:52:39Z INFO  pms_sdk] proof generated in 99.297730667s
+✅ vote recorded — tx 4659efa1e79937ddf2941999e6485ebce2b99d790a283f0b2ad48be9c69b7bd7
+   the transaction carries no signature, no account id, no salt
+
+real	1m47.369s
+user	19m42.112s
+sys	0m9.474s
+multisig 2-of-3 · proposals so far: 1
+  member 1: 8beccfdb4a3d18670a026bd2c7ed6c02d1c98cbb30cbd24b7b8510ba866fd435
+  member 2: a2b212a173d6922c0228910832bb11b8b9770f861427bc0ac99e2fecaa5a1166
+  member 3: 4678c859ecfcb22d16603fd5b0447486bc65fe0231bd7415979ce5d468a1f8fa
+proposal #1: Active · approvals: 1 · rejections: 0
+  vote nullifier: 2f799d9a5672fadf9b6bb8b135d9bd494332c8647afa1e6c4b81f52cf04dbc7e
+this identity HAS voted on #1
+
+═══ Member 1 tries to vote AGAIN — rejected locally, nothing submitted ═══
+approving proposal #1 privately as an anonymous member...
+(proving locally — takes ~2 minutes with RISC0_DEV_MODE=0)
+[2026-06-13T01:52:47Z INFO  pms_sdk] proving private vote (this can take minutes with RISC0_DEV_MODE=0)...
+
+thread '<unnamed>' panicked at multisig_program/src/approve.rs:47:5:
+PMS_E012: duplicate vote nullifier (already approved)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+Error: vote failed: local execution/proving failed: ProgramProveFailed("Guest panicked: PMS_E012: duplicate vote nullifier (already approved)")
+double vote rejected (PMS_E012: duplicate vote nullifier)
+
+═══ Member 2 approves ANONYMOUSLY (reaches 2-of-3) ═══
+approving proposal #1 privately as an anonymous member...
+(proving locally — takes ~2 minutes with RISC0_DEV_MODE=0)
+[2026-06-13T01:52:47Z INFO  pms_sdk] proving private vote (this can take minutes with RISC0_DEV_MODE=0)...
+[2026-06-13T01:54:21Z INFO  pms_sdk] proof generated in 94.043258s
+✅ vote recorded — tx 25a6c4f7086491fbc5548128ed543d3d99fe3a2def89b7cb993c78d7652bf2a0
+   the transaction carries no signature, no account id, no salt
+
+real	1m44.104s
+user	19m48.221s
+sys	0m6.008s
+multisig 2-of-3 · proposals so far: 1
+  member 1: 8beccfdb4a3d18670a026bd2c7ed6c02d1c98cbb30cbd24b7b8510ba866fd435
+  member 2: a2b212a173d6922c0228910832bb11b8b9770f861427bc0ac99e2fecaa5a1166
+  member 3: 4678c859ecfcb22d16603fd5b0447486bc65fe0231bd7415979ce5d468a1f8fa
+proposal #1: Active · approvals: 2 · rejections: 0
+  vote nullifier: 2f799d9a5672fadf9b6bb8b135d9bd494332c8647afa1e6c4b81f52cf04dbc7e
+  vote nullifier: d78e9f41a3678da8692656aa531b5f9d10db93f54325857eb061f8e09ee34da6
+
+═══ Execute (permissionless, unsigned — involves no member at all) ═══
+✅ proposal #1 executed
+
+═══ Final balances ═══
+AXHCJYSYzXnuFhqdaenXKFphgCQS9upMpDosqus45kqQ: 400 tokens
+8wd6qLd62MhadCK1wtRMYWKmyvaTg8bafFoUo3kHmXuc: 101 tokens
+multisig 2-of-3 · proposals so far: 1
+  member 1: 8beccfdb4a3d18670a026bd2c7ed6c02d1c98cbb30cbd24b7b8510ba866fd435
+  member 2: a2b212a173d6922c0228910832bb11b8b9770f861427bc0ac99e2fecaa5a1166
+  member 3: 4678c859ecfcb22d16603fd5b0447486bc65fe0231bd7415979ce5d468a1f8fa
+proposal #1: Executed · approvals: 2 · rejections: 0
+  vote nullifier: 2f799d9a5672fadf9b6bb8b135d9bd494332c8647afa1e6c4b81f52cf04dbc7e
+  vote nullifier: d78e9f41a3678da8692656aa531b5f9d10db93f54325857eb061f8e09ee34da6
+
+🎉 Demo complete: 2-of-3 threshold reached and executed.
+   On-chain: 3 opaque member commitments, 2 unlinkable vote nullifiers,
+   zero member signatures, zero member account IDs.
+sequencer log: /tmp/pms-demo-seq.zQqXu4/seq.log · artifacts: /Users/jmartin22/Desktop/lez-private-multisig/demo-run/

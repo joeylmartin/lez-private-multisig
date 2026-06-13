@@ -1,3 +1,5 @@
 target/
-Cargo.lock
-!/Cargo.lock
+
+# Runtime artifacts from demo.sh / testnet runs — contain private key files
+demo-run/
+demo-testnet/

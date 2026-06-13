@@ -1,0 +1,27 @@
+[package]
+name = "pms-cli"
+version = "0.1.0"
+edition = "2021"
+description = "CLI for the LEZ private multisig (LP-0002)"
+
+[[bin]]
+name = "pms"
+path = "src/main.rs"
+
+[dependencies]
+pms_sdk = { path = "../sdk" }
+pms_core = { path = "../pms_core" }
+nssa.workspace = true
+nssa_core.workspace = true
+common.workspace = true
+sequencer_service_rpc.workspace = true
+token_core.workspace = true
+borsh.workspace = true
+clap = { version = "4", features = ["derive", "env"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+hex = "0.4"
+rand = "0.8"
+tokio = { version = "1", features = ["full"] }
+env_logger = "0.11"
+anyhow = "1"
