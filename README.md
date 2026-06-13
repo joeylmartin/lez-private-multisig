@@ -30,9 +30,15 @@ state shows only that the M-of-N threshold was reached.
   No member account is ever involved.
 
 The same guest binary runs in both LEZ execution modes; the protocol — not
-the program — decides public vs. private. The e2e test drives the full
-lifecycle in public mode (identical logic, visible transport); the private
-transport for Approve is the SDK's job (in progress).
+the program — decides public vs. private. One e2e suite drives the full
+lifecycle in public mode (identical logic, visible transport); a second drives
+**real private approvals** through the SDK and asserts the privacy properties
+against the on-chain bytes.
+
+**Program ID** (Risc0 image ID, reproducible via `cargo risczero build`):
+`4034ba058ee8b799fe0f5cf449b503a7a0d2acb1554144f81bf9cd942a171c2b`
+— deployed on the public testnet (`https://testnet.lez.logos.co`,
+explorer `https://explorer.testnet.lez.logos.co/`).
 
 ## Layout
 
@@ -108,29 +114,97 @@ recomputed purely from chain state (resumability).
   conflicts (another vote landed first) surface as `NotIncluded` with
   refresh-and-re-prove guidance.
 
+## CLI (`pms`)
+
+`cargo build --release -p pms-cli` builds the `pms` binary that wraps the SDK.
+A full multisig lifecycle from the shell (set `SEQUENCER_URL`, `PMS_PROGRAM`,
+`TOKEN_PROGRAM` once, or pass `--url`/`--program`):
+
+```bash
+# Each member, locally — prints a commitment to share (never the identity file)
+pms keygen --out alice.json
+pms keygen --out bob.json
+pms keygen --out carol.json
+
+pms deploy                                   # idempotent
+pms create --threshold 2 \                   # prints the create key + vault PDA
+    --member-cm <alice_cm> --member-cm <bob_cm> --member-cm <carol_cm>
+
+# Fund the vault (token helpers wrap the platform token program for demos)
+pms token create --supply 1000000 --definition-out def.json --minter-out minter.json
+pms init-vault --create-key <key> --definition <def_account>
+pms token transfer --from minter.json --to <vault> --amount 500
+
+# Propose, then vote anonymously (each approval is a local proof)
+pms propose-transfer --create-key <key> --index 1 --amount 100 --recipient <recipient>
+pms approve --create-key <key> --index 1 --identity alice.json
+pms approve --create-key <key> --index 1 --identity bob.json
+pms status  --create-key <key> --index 1     # shows unlinkable nullifiers, threshold
+pms execute --create-key <key> --index 1 --target <vault> --target <recipient>
+```
+
+`scripts/demo.sh` runs exactly this flow end-to-end against a fresh local
+sequencer with `RISC0_DEV_MODE=0` (real proofs):
+
+```bash
+LEZ_DIR=<path-to-logos-execution-zone-v0.1.2> ./scripts/demo.sh
+```
+
+## Basecamp GUI
+
+A Logos Basecamp UI app lives in the sibling repo
+[`logos-private-multisig-ui`](../logos-private-multisig-ui) — a `ui_qml` app
+with a process-isolated C++ backend (Qt Remote Objects) that drives this
+`pms` CLI. `nix build` produces a loadable module; it loads into the standalone
+host, completes the remoting handshake, and round-trips button clicks into the
+backend (verified by `tests/smoke.mjs`). Package as an LGX with `lgpm` to load
+it inside Basecamp.
+
 ## Benchmarks
 
 Real proving (`RISC0_DEV_MODE=0`) on an Apple Silicon laptop: program guest
 **296,557 cycles**; full private-approval proof (program receipt + succinct
 privacy-circuit receipt) **101 s** wall-clock; proof 227 KB; verification
-10 ms. Details in [docs/benchmarks.md](docs/benchmarks.md).
+10 ms. The local `demo.sh` run recorded two approvals at 99 s and 94 s. Details
+in [docs/benchmarks.md](docs/benchmarks.md), evidence in
+[docs/evidence/](docs/evidence/).
+
+## CI
+
+`.github/workflows/ci.yml` has two jobs: **check** (unit tests + IDL
+up-to-date check + host-crate `cargo check`, hermetic, no proving) and
+**e2e** (builds the real guest, runs a standalone LEZ v0.1.2 sequencer, and
+runs both e2e suites with `RISC0_DEV_MODE=1`).
 
 ## Error codes
 
 All program failures use stable, documented `PMS_Exxx` panic strings — see
 [`pms_core/src/error.rs`](pms_core/src/error.rs).
 
-## Status / roadmap
+## Status
 
 - [x] Program: create / propose / approve / reject / execute with anonymous
-      membership + per-proposal nullifiers (29 unit tests)
+      membership + per-proposal nullifiers (31 unit tests)
 - [x] Reproducible guest build (Docker image ID)
-- [x] SPEL IDL
-- [x] E2E lifecycle vs. real sequencer (public mode)
+- [x] SPEL IDL (`idl/private_multisig_idl.json`, 6 instructions)
 - [x] SDK: private-execution transport for Approve/Reject (privacy circuit
       proving, zero-signature submission, typed error surface)
-- [x] Private-mode e2e with on-chain privacy assertions
+- [x] E2E: public-mode lifecycle + private-mode approvals vs. real sequencer
+- [x] CLI (`pms`) + reproducible `demo.sh` (`RISC0_DEV_MODE=0`)
+- [x] Basecamp GUI module (sibling repo; builds + loads + smoke-tested)
 - [x] `RISC0_DEV_MODE=0` laptop benchmark (101 s / approval; docs/benchmarks.md)
-- [ ] Member-account update path UX (sync-private equivalent for repeat voters)
-- [ ] CLI + Basecamp GUI module
-- [ ] Testnet deployment evidence, demo.sh, write-up, video
+- [x] Testnet deployment (program + a 2-of-3 instance)
+- [x] CI (unit/IDL/check + e2e vs standalone sequencer)
+- [ ] Member-account update path for repeat voters (SDK hook exists; untested)
+- [ ] Narrated demo video (recorded separately for submission)
+
+## Write-up
+
+[docs/design.md](docs/design.md) covers the threshold scheme, nullifier
+design, the LEZ account-model compatibility answer (how the nonce /
+`program_owner` constraints are handled), trust assumptions, known
+limitations, and the integration guide.
+
+## License
+
+Dual-licensed under MIT or Apache-2.0, at your option.

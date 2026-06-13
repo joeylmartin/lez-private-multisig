@@ -1,0 +1,159 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RISC0_VERSION: "3.0.5"
+  # Platform pin: logos-execution-zone tag v0.1.2 (the generation SPEL and the
+  # current testnet build target). The IDL generator and program crates pin to
+  # the same tag via Cargo.toml.
+  LEZ_TAG: "v0.1.2"
+
+jobs:
+  # Fast, hermetic checks — no proving, no sequencer. This is the gate that
+  # must stay green on the default branch.
+  check:
+    name: Unit tests + IDL
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.94.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: "check"
+
+      # The host crates link nssa_core (host feature) which needs the circuits
+      # directory to exist; the v0.1.2-pinned build script asserts on it.
+      - name: Install logos-blockchain-circuits
+        run: |
+          curl -sSL https://raw.githubusercontent.com/logos-blockchain/logos-blockchain/6ac348bea4160ca708b70a86b3964e9f1ce82fff/scripts/setup-logos-blockchain-circuits.sh | bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Unit tests (program logic, hashing, PDA math)
+        env:
+          RISC0_SKIP_BUILD: "1"
+        run: cargo test -p pms_core -p multisig_program
+
+      - name: Generate SPEL IDL and check it is committed up to date
+        env:
+          RISC0_SKIP_BUILD: "1"
+        run: |
+          cargo run -p private-multisig-idl-gen > /tmp/idl.json
+          python3 -m json.tool /tmp/idl.json > /dev/null && echo "IDL is valid JSON"
+          if ! diff -q /tmp/idl.json idl/private_multisig_idl.json; then
+            echo "::error::idl/private_multisig_idl.json is out of date — run: cargo run -p private-multisig-idl-gen > idl/private_multisig_idl.json"
+            diff /tmp/idl.json idl/private_multisig_idl.json || true
+            exit 1
+          fi
+
+      - name: cargo check (host crates: sdk + cli)
+        env:
+          RISC0_SKIP_BUILD: "1"
+        run: cargo check -p pms_sdk -p pms-cli
+
+  # Full end-to-end: build the real guest, run a standalone LEZ sequencer, and
+  # drive the whole lifecycle (public-mode and private-mode approvals). Uses
+  # RISC0_DEV_MODE=1 so proofs are fast; the proving *pipeline* is identical to
+  # the RISC0_DEV_MODE=0 demo (scripts/demo.sh), only the proof is mocked.
+  e2e:
+    name: E2E vs standalone sequencer
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      RISC0_DEV_MODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.94.0
+
+      - name: Install risc0 toolchain (r0vm + cargo-risczero)
+        run: |
+          for attempt in 1 2 3; do
+            curl -L --retry 3 --retry-delay 5 https://risczero.com/install | bash && break
+            sleep 10
+          done
+          echo "$HOME/.risc0/bin" >> $GITHUB_PATH
+          export PATH="$HOME/.risc0/bin:$PATH"
+          for attempt in 1 2 3; do rzup install cargo-risczero ${{ env.RISC0_VERSION }} && break; sleep 15; done
+          for attempt in 1 2 3; do rzup install r0vm ${{ env.RISC0_VERSION }} && break; sleep 15; done
+          rzup install rust
+          rzup install cpp
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: "e2e"
+          cache-targets: true
+
+      - name: Install logos-blockchain-circuits
+        run: |
+          curl -sSL https://raw.githubusercontent.com/logos-blockchain/logos-blockchain/6ac348bea4160ca708b70a86b3964e9f1ce82fff/scripts/setup-logos-blockchain-circuits.sh | bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache guest binary
+        id: cache-guest
+        uses: actions/cache@v4
+        with:
+          path: target/riscv32im-risc0-zkvm-elf/docker/private_multisig.bin
+          key: guest-${{ hashFiles('pms_core/src/**', 'multisig_program/src/**', 'methods/**', 'Cargo.lock') }}
+
+      - name: Build guest binary (reproducible, Docker)
+        if: steps.cache-guest.outputs.cache-hit != 'true'
+        run: cargo risczero build --manifest-path methods/guest/Cargo.toml
+
+      - name: Clone logos-execution-zone @ ${{ env.LEZ_TAG }}
+        run: |
+          git init /tmp/lez
+          cd /tmp/lez
+          git remote add origin https://github.com/logos-blockchain/logos-execution-zone.git
+          git fetch --depth 1 origin tag ${{ env.LEZ_TAG }}
+          git checkout FETCH_HEAD
+
+      - name: Cache sequencer binary
+        id: cache-seq
+        uses: actions/cache@v4
+        with:
+          path: /tmp/lez/target/debug/sequencer_service
+          key: sequencer-${{ env.LEZ_TAG }}
+
+      - name: Build standalone sequencer
+        if: steps.cache-seq.outputs.cache-hit != 'true'
+        run: |
+          cd /tmp/lez
+          cargo build --features standalone -p sequencer_service
+
+      - name: Start sequencer
+        run: |
+          mkdir -p /tmp/seqhome && cd /tmp/seqhome
+          RUST_LOG=info RISC0_DEV_MODE=1 \
+            /tmp/lez/target/debug/sequencer_service \
+            /tmp/lez/sequencer/service/configs/debug/sequencer_config.json \
+            > /tmp/sequencer.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -s -m 2 -X POST http://127.0.0.1:3040 -H 'Content-Type: application/json' \
+                 -d '{"jsonrpc":"2.0","id":1,"method":"checkHealth","params":[]}' 2>/dev/null | grep -q result; then
+              echo "Sequencer ready after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Sequencer failed to start"; cat /tmp/sequencer.log; exit 1
+
+      - name: Run e2e suites (public-mode lifecycle + private approvals)
+        env:
+          PMS_PROGRAM: ${{ github.workspace }}/target/riscv32im-risc0-zkvm-elf/docker/private_multisig.bin
+          TOKEN_PROGRAM: /tmp/lez/artifacts/program_methods/token.bin
+          SEQUENCER_URL: http://127.0.0.1:3040
+        run: cargo test -p private-multisig-e2e -- --nocapture --test-threads=1
+
+      - name: Upload sequencer logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sequencer-logs
+          path: /tmp/sequencer.log

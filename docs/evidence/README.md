@@ -41,12 +41,15 @@ LEZ_DIR=<path-to-logos-execution-zone-v0.1.2> ./scripts/demo.sh
 
 ## Testnet
 
-The program and a 2-of-3 instance were also deployed to the public testnet
-(`https://testnet.lez.logos.co`) and driven through `propose`; completing the
-private approvals there is in progress (each approval is a ~2-minute proof and
-testnet inclusion latency required a raised `PMS_INCLUSION_TIMEOUT_SECS`).
-The local run above is the authoritative real-proof evidence; the testnet run
-is supplementary.
+The **full lifecycle also completed on the public testnet**
+(`https://testnet.lez.logos.co`) with real proofs: a 2-of-3 multisig, two
+anonymous private approvals (proofs 98.3 s and 94.6 s), and execution moving
+100 tokens vault → recipient — proposal `Executed`, vault 500 → 400,
+recipient 1 → 101. The two approval transactions, fetched back and decoded
+with the real `NSSATransaction` types, are unsigned PrivacyPreserving txs that
+contain no member salt or account ID. Full details, on-chain IDs, and
+reproduction steps: [testnet.md](testnet.md) (+ raw
+[testnet-lifecycle.log](testnet-lifecycle.log)).
 
 - program id: `4034ba058ee8b799fe0f5cf449b503a7a0d2acb1554144f81bf9cd942a171c2b`
 - explorer: https://explorer.testnet.lez.logos.co/

@@ -4087,6 +4087,7 @@ dependencies = [
  "borsh",
  "common",
  "env_logger",
+ "hex",
  "nssa",
  "nssa_core",
  "pms_core",

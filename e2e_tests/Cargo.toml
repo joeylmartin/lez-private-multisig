@@ -21,6 +21,7 @@ borsh.workspace = true
 tokio = { version = "1", features = ["full"] }
 pms_sdk = { path = "../sdk" }
 env_logger = "0.11"
+hex = "0.4"
 
 [[test]]
 name = "e2e_private_approve"
