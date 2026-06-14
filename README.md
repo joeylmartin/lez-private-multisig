@@ -1,7 +1,9 @@
 # Private M-of-N Multisig for LEZ (LP-0002) [logos lambda prize: https://build.logos.co/prize]
 
 UPDATE: solution for prize reached 10 hours before me :(
-Congratulations to @jeefxm! (https://github.com/jeefxM/lp-0002-private-multisig)
+
+Congratulations to all the contributors of the winning solution!
+Accesible from https://github.com/jeefxM/lp-0002-private-multisig
 
 
 A multisig program for the Logos Execution Zone where **approvals reveal
@@ -199,8 +201,6 @@ All program failures use stable, documented `PMS_Exxx` panic strings — see
 - [x] `RISC0_DEV_MODE=0` laptop benchmark (101 s / approval; docs/benchmarks.md)
 - [x] Testnet deployment (program + a 2-of-3 instance)
 - [x] CI (unit/IDL/check + e2e vs standalone sequencer)
-- [ ] Member-account update path for repeat voters (SDK hook exists; untested)
-- [ ] Narrated demo video (recorded separately for submission)
 
 ## Write-up
 
