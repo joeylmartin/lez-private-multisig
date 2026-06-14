@@ -1,4 +1,8 @@
-# Private M-of-N Multisig for LEZ (LP-0002)
+# Private M-of-N Multisig for LEZ (LP-0002) [logos lambda prize: https://build.logos.co/prize]
+
+UPDATE: solution for prize reached 10 hours before me :(
+Congratulations to @jeefxm! (https://github.com/jeefxM/lp-0002-private-multisig)
+
 
 A multisig program for the Logos Execution Zone where **approvals reveal
 nothing about who voted** — not to observers, not to other members. On-chain
